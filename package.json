@@ -1,0 +1,19 @@
+{
+  "name": "eqhorizontal",
+  "version": "1.0.0",
+  "description": "Renders images in a container hhorizontally in rows to fill full width (exept last line).",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/glassShard/eqHorizontal.git"
+  },
+  "author": "glassshard",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/glassShard/eqHorizontal/issues"
+  },
+  "homepage": "https://github.com/glassShard/eqHorizontal#readme"
+}
