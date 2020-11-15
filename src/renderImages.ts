@@ -1,30 +1,57 @@
 import {Options} from "./Models/options";
 import {InitedContainer} from "./Models/initedContainer";
-import {rerenderOnResize} from "./rerenderOnResize";
 
 const initializedContainers: Array<InitedContainer> = [];
 
-export function renderEqHorizontal(options: Options): void {
+export function renderEqHorizontal(options: Options, timeouts: Array<any>, checkContainerWidths: boolean): void {
+
     let renderAgain = false;
-    const defaultHeight = options.defaultHeight;
+    const defaultHeight = options.defaultHeight ? options.defaultHeight : 120;
     const spacing = options.spacing ? options.spacing : 0;
+    const animation = options.animation ? options.animation : null;
+
+
     const containers = document.querySelectorAll('.eqHorizontal') as NodeListOf<HTMLDivElement>;
 
     /** save original data from every container with this class and set needed styles **/
 
-    initializeContainers(containers, defaultHeight);
+    initializeContainers(containers, defaultHeight, animation);
+    // console.log(initializedContainers);
+
+    /** if call the function because of resizing window, change containerWidth to the correct
+     * width after resizing
+     **/
+
+    if (checkContainerWidths) {
+        initializedContainers.map(container => {
+            container.containerWidth = container.container.clientWidth;
+        })
+    }
 
     /** function for rendering images **/
 
     const renderImages = () => {
+        timeouts.map((timeout) => {
+            clearTimeout(timeout)
+        });
+        timeouts = [];
+
         initializedContainers.forEach((container: InitedContainer): void => {
             const containerWidth = container.containerWidth;
             const rawContainerWidth = container.container.getBoundingClientRect().width;
+            console.log('*****************');
+            console.log('rawContainerWidth: ', rawContainerWidth);
             const elements = container.elements;
+
+    //         elements.map(element => {
+    //             element.style.transition = 'all 0s ease 0s';
+    //             // element.style.transform = 'scale(1)';
+    // //            console.log(element);
+    //         });
 
             /** create rows inside the containers with the suitable amount of images in each row **/
 
-            const groupedElements = elements.reduce((acc: Array<any>, curr: any, index) => {
+            const groupedElements = elements.reduce((acc: Array<Array<HTMLElement>>, curr: any, index) => {
                 if (index === 0) {
                     acc[index].push(curr);
                     return acc;
@@ -46,12 +73,13 @@ export function renderEqHorizontal(options: Options): void {
 
             /** set images width and height to be exactly the container size **/
 
-            groupedElements.map((group: Array<HTMLElement>, index) => {
+            groupedElements.map((group: Array<any>, index) => {
                 const groupLength = group.length;
                 const groupWidth = getWidth(group);
-                const firstWidth = (group[0].clientWidth / groupWidth) * (containerWidth - ((groupLength - 1) * spacing));
-                const ratio = firstWidth / group[0].clientWidth;
+                const firstWidth = (group[0].origWidth / groupWidth) * (containerWidth - ((groupLength - 1) * spacing));
+                const ratio = firstWidth / group[0].origWidth;
                 const height = Math.floor(defaultHeight * ratio);
+                console.log('height: ', height);
 
                 if (options.leaveLastRow && index === groupedElements.length - 1 && groupWidth < containerWidth / 2) {
                     group.map((element: any) => {
@@ -68,8 +96,10 @@ export function renderEqHorizontal(options: Options): void {
                                     return acc;
                                 }
 
-                                return acc + curr.getBoundingClientRect().width;
+                                return acc + (+curr.style.width.slice(0, -2));
                             }, 0);
+                            console.log('groupWidthWithoutLast: ', groupWidthWithoutLast);
+                            console.log('lastElementWidth: ', rawContainerWidth - groupWidthWithoutLast - (groupLength - 1) * spacing);
 
                             setElementSize(
                                 element,
@@ -96,7 +126,7 @@ export function renderEqHorizontal(options: Options): void {
 
     /** check if the size of containers remain unchanged after rendering (if scrollbar needed or
      *  removed **/
-
+    console.log('oldClientWidth: ', initializedContainers[0].containerWidth);
     initializedContainers.map((container: InitedContainer): void => {
         const newWidth = container.container.clientWidth;
         if (newWidth !== container.containerWidth) {
@@ -104,25 +134,52 @@ export function renderEqHorizontal(options: Options): void {
             container.containerWidth = newWidth;
         }
     });
+    console.log('newClientWidth: ', initializedContainers[0].container.clientWidth);
+
+    console.log('renderAgain: ', renderAgain);
 
     /** if not, render images again **/
 
     if (renderAgain) {
         renderAgain = false;
+        console.log('///////////renderAgain ran');
         renderImages();
     }
 
-    // initializedContainers.forEach((container) => {
-    //     const elements = container.elements;
-    //     elements.map(element => {
-    //         element.style.opacity = 1;
-    //     })
-    // })
+    if (animation) {
+        //const transform = animation.transform ? animation.transform
+
+        initializedContainers.forEach((container) => {
+            const elements = container.elements;
+
+            for (let i = 0; i < elements.length; i++) {
+                const timeout = (i) * 50;
+                elements[i].style.transform = 'scale(0)';
+                timeouts.push(setTimeout(() => {
+                    elements[i].style.opacity = '1';
+                    elements[i].style.transform = 'scale(1)';
+                    elements[i].style.transition = 'all .3s';
+                }, timeout));
+            }
+        })
+    }
+}
+
+export function setFade() {
+    initializedContainers.forEach((container) => {
+        const elements = container.elements;
+
+        elements.map(element => {
+            element.style.opacity = '1';
+            element.style.transition = 'all 0s ease 0s';
+            element.style.transform = 'scale(1)';
+        });
+    })
 }
 
 /** initialize containers and save orig data **/
 
-function initializeContainers(containers: NodeListOf<HTMLDivElement>, defaultHeight: number) {
+function initializeContainers(containers: NodeListOf<HTMLDivElement>, defaultHeight: number, animation: any) {
 
     if (initializedContainers.length !== 0) {
         return;
@@ -137,8 +194,11 @@ function initializeContainers(containers: NodeListOf<HTMLDivElement>, defaultHei
 
             const widths: Array<number> = elements.map((element: any) => {
                 element.height = defaultHeight;
-                // element.style.opacity = 0;
-                // element.style.transition = 'all .3s';
+
+                if (animation && animation.opacity) {
+                    element.style.opacity = '0';
+                }
+
                 return element.clientWidth;
             });
 
@@ -155,7 +215,8 @@ function setElementSize(element: any, width: number, height: number) {
     element.height = height;
 }
 
-function getWidth(array: Array<HTMLElement>): number {
+function
+getWidth(array: Array<HTMLElement>): number {
     return array.reduce((acc: number, curr: any) => {
         return acc + curr.origWidth;
     }, 0);

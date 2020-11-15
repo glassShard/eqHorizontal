@@ -1,18 +1,21 @@
-import { renderEqHorizontal } from "./renderImages";
+import {renderEqHorizontal, setFade} from "./renderImages";
 import {Options} from "./Models/options";
 
-export function rerenderOnResize(options: Options) {
+export function rerenderOnResize(options: Options, timeouts: Array<number>) {
     let resizeTimer = false;
     window.addEventListener('resize', () => {
-        console.log('resized');
         if (!resizeTimer) {
-            console.log('rendered');
             resizeTimer = true;
-            renderEqHorizontal(options);
+
+            /** when resizing begins, set elements opacity to 0 **/
+
+            setFade();
+
+            /** let resizing happen, after the last fired event let's run rendering function **/
+
             setTimeout(() => {
                 resizeTimer = false;
-                console.log('rendered after 500ms');
-                renderEqHorizontal(options);
+                renderEqHorizontal(options, timeouts, true);
             }, 500);
         }
     })
