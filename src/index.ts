@@ -15,7 +15,7 @@ eqHorizontal({
     spacing: 12,
     animation: {
         opacity: true,
-        transform: 'scale',
+        transform: 'scale(0)',
         timing: 50,
         transition: 300,
         reverseOrder: false,

@@ -26,7 +26,7 @@ export class Options {
         if (data) {
             (<any>Object).assign(this, data);
         }
-    }
+    };
 }
 
 

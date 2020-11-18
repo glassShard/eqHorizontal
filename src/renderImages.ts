@@ -1,7 +1,10 @@
-import {Options} from "./Models/options";
-import {InitedContainer} from "./Models/initedContainer";
+import { Options } from "./Models/options";
+import { InitedContainer } from "./Models/initedContainer";
+import { transforms } from "./transforms";
 
 const initializedContainers: Array<InitedContainer> = [];
+let transform = null;
+let chosenTransform: any = null;
 
 export function renderEqHorizontal(options: Options, timeouts: Array<any>, checkContainerWidths: boolean): void {
 
@@ -9,7 +12,6 @@ export function renderEqHorizontal(options: Options, timeouts: Array<any>, check
     const defaultHeight = options.defaultHeight ? options.defaultHeight : 120;
     const spacing = options.spacing ? options.spacing : 0;
     const animation = options.animation ? options.animation : null;
-
 
     const containers = document.querySelectorAll('.eqHorizontal') as NodeListOf<HTMLDivElement>;
 
@@ -49,7 +51,7 @@ export function renderEqHorizontal(options: Options, timeouts: Array<any>, check
     // //            console.log(element);
     //         });
 
-            /** create rows inside the containers with the suitable amount of images in each row **/
+            /** create rows inside the containers with the correct amount of images in each row **/
 
             const groupedElements = elements.reduce((acc: Array<Array<HTMLElement>>, curr: any, index) => {
                 if (index === 0) {
@@ -147,21 +149,29 @@ export function renderEqHorizontal(options: Options, timeouts: Array<any>, check
     }
 
     if (animation) {
-        //const transform = animation.transform ? animation.transform
+        const transform = animation.transform ? animation.transform : null;
+
+        const transformElements = (transform: string, element: HTMLElement) => {
+            if (transform === null) {
+                return;
+            }
+            element.style.transform = transform;
+        };
 
         initializedContainers.forEach((container) => {
             const elements = container.elements;
 
             for (let i = 0; i < elements.length; i++) {
                 const timeout = (i) * 50;
-                elements[i].style.transform = 'scale(0)';
+                transformElements(animation.transform, elements[i]);
+
                 timeouts.push(setTimeout(() => {
                     elements[i].style.opacity = '1';
-                    elements[i].style.transform = 'scale(1)';
-                    elements[i].style.transition = 'all .3s';
+                    elements[i].style.transform = chosenTransform.transform + chosenTransform.initValue;
+                    elements[i].style.transition = 'all .8s';
                 }, timeout));
             }
-        })
+        });
     }
 }
 
@@ -183,6 +193,23 @@ function initializeContainers(containers: NodeListOf<HTMLDivElement>, defaultHei
 
     if (initializedContainers.length !== 0) {
         return;
+    }
+
+    if (animation) {
+        if (animation.transform) {
+            const transformString = animation.transform;
+            const tr = transforms.find(transform => transform.transform === transformString.split('(')[0]);
+
+            if (tr === undefined) {
+                console.warn('You set transform to an unaccepted value. Accepted values are: ' +
+                    '\'translate\', \'translateX\', \'translateY\', \'scale\', \'scaleX\', \'scaleY\', ' +
+                    '\'rotate\', \'rotateX\', \'rotateY\', \'rotateZ\' with (parameters). Code' +
+                    ' will not break, but no animation transform will be applied.');
+            } else {
+                transform = transformString;
+                chosenTransform = tr;
+            }
+        }
     }
 
     Array.from(containers)
